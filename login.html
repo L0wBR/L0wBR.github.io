@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Araçá Essencias - Login</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="body-login">
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-header">
+          <h1>Araçá Essencias</h1>
+          <p>Essências Artesanais</p>
+        </div>
+
+        <!-- Formulário de Login -->
+        <form id="login-form" class="auth-form ativo">
+          <h2>Bem-vindo de volta!</h2>
+
+          <div class="form-group">
+            <label for="login-email">Email:</label>
+            <input
+              type="email"
+              id="login-email"
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="login-senha">Senha:</label>
+            <input
+              type="password"
+              id="login-senha"
+              placeholder="Sua senha"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-auth">Entrar</button>
+
+          <p class="admin-credenciais">
+            Admin padrão: admin@araca.com · senha: admin123
+          </p>
+
+          <p class="toggle-form">
+            Não tem conta?
+            <a href="#" onclick="toggleForm(event)">Criar uma agora</a>
+          </p>
+        </form>
+
+        <!-- Formulário de Registro -->
+        <form id="registro-form" class="auth-form">
+          <h2>Crie sua conta</h2>
+
+          <div class="form-group">
+            <label for="registro-nome">Nome Completo:</label>
+            <input
+              type="text"
+              id="registro-nome"
+              placeholder="Seu nome"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="registro-email">Email:</label>
+            <input
+              type="email"
+              id="registro-email"
+              placeholder="seu@email.com"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="registro-senha">Senha:</label>
+            <input
+              type="password"
+              id="registro-senha"
+              placeholder="Crie uma senha"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="registro-confirmar">Confirmar Senha:</label>
+            <input
+              type="password"
+              id="registro-confirmar"
+              placeholder="Confirme a senha"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-auth">Criar Conta</button>
+
+          <p class="toggle-form">
+            Já tem conta?
+            <a href="#" onclick="toggleForm(event)">Entrar aqui</a>
+          </p>
+        </form>
+
+        <!-- Mensagem de erro -->
+        <div id="erro-mensagem" class="erro-mensagem"></div>
+      </div>
+
+      <div class="login-background">
+        <div class="bubble bubble-1"></div>
+        <div class="bubble bubble-2"></div>
+        <div class="bubble bubble-3"></div>
+      </div>
+    </div>
+
+    <script src="auth.js"></script>
+  </body>
+</html>

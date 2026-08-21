@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Araçá Essencias - Essências Artesanais</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="logo">
+          <h1>Araçá Essencias</h1>
+          <p>Essências Artesanais</p>
+        </div>
+        <nav class="nav">
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#produtos">Produtos</a></li>
+            <li><a href="#sobre">Sobre</a></li>
+            <li><a href="#contato">Contato</a></li>
+          </ul>
+        </nav>
+        <button
+          class="admin-btn"
+          onclick="toggleAdmin()"
+          title="Gerenciar Produtos"
+        >
+          ⚙️ Admin
+        </button>
+        <button class="carrinho-btn" onclick="toggleCarrinho()">
+          Carrinho (<span id="contador-carrinho">0</span>)
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+      <div class="hero-content">
+        <h2>Descubra Essências Extraordinárias</h2>
+        <button
+          class="btn-principal"
+          onclick="document.getElementById('produtos').scrollIntoView()"
+        >
+          Explorar Produtos
+        </button>
+      </div>
+    </section>
+
+    <!-- Produtos -->
+    <section class="produtos" id="produtos">
+      <div class="container">
+        <h2 class="titulo-secao">Nossos Produtos</h2>
+        <div class="grid-produtos" id="grid-produtos">
+          <!-- Produtos serão adicionados por JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Carrinho Lateral -->
+    <div class="carrinho-sidebar" id="carrinho-sidebar">
+      <div class="carrinho-header">
+        <h3>Meu Carrinho</h3>
+        <button class="close-btn" onclick="toggleCarrinho()">✕</button>
+      </div>
+      <div class="carrinho-items" id="carrinho-items">
+        <p class="carrinho-vazio">Seu carrinho está vazio</p>
+      </div>
+      <div class="carrinho-footer">
+        <div class="total">
+          <strong>Total:</strong>
+          <span id="total-preco">R$ 0,00</span>
+        </div>
+        <button class="btn-checkout" onclick="checkout()">
+          Finalizar Compra
+        </button>
+      </div>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay" onclick="toggleCarrinho()"></div>
+
+    <!-- Modal Admin -->
+    <div class="modal" id="modal-admin">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Gerenciar Produtos</h2>
+          <button class="modal-close" onclick="toggleAdmin()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Formulário para adicionar produto -->
+          <div class="admin-section">
+            <h3>Adicionar Novo Produto</h3>
+            <form id="form-novo-produto" class="form-produto">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome:</label>
+                  <input
+                    type="text"
+                    id="prod-nome"
+                    placeholder="Nome do produto"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Preço (R$):</label>
+                  <input
+                    type="number"
+                    id="prod-preco"
+                    placeholder="0.00"
+                    step="0.01"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Descrição:</label>
+                  <input
+                    type="text"
+                    id="prod-descricao"
+                    placeholder="Descrição do produto"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Emoji:</label>
+                  <input
+                    type="text"
+                    id="prod-emoji"
+                    placeholder="Ex: 🌿"
+                    maxlength="2"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button type="submit" class="btn-adicionar-prod">
+                + Adicionar Produto
+              </button>
+            </form>
+          </div>
+
+          <!-- Lista de produtos -->
+          <div class="admin-section">
+            <h3>Produtos Cadastrados</h3>
+            <div class="produtos-admin" id="produtos-admin">
+              <!-- Produtos serão listados aqui -->
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <h3>Permissões das Contas</h3>
+            <div class="usuarios-admin" id="usuarios-admin">
+              <!-- Contas serão listadas aqui -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="toggleAdmin()"></div>
+
+    <!-- Sobre -->
+    <section class="sobre" id="sobre">
+      <div class="container">
+        <h2 class="titulo-secao">Sobre a AromaShop</h2>
+        <p>
+          Oferecemos as melhores essências aromáticas do mercado, selecionadas
+          com cuidado para garantir qualidade e autenticidade. Nossas essências
+          são 100% naturais e importadas.
+        </p>
+      </div>
+    </section>
+
+    <!-- Contato -->
+    <section class="contato" id="contato">
+      <div class="container">
+        <h2 class="titulo-secao">Fale Conosco</h2>
+        <form class="form-contato" onsubmit="enviarMensagem(event)">
+          <input type="text" placeholder="Seu Nome" required />
+          <input type="email" placeholder="Seu Email" required />
+          <textarea placeholder="Sua Mensagem" rows="5" required></textarea>
+          <button type="submit" class="btn-principal">Enviar</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2026 AromaShop. Todos os direitos reservados.</p>
+        <p>Desenvolvido com ❤️ para aromáticos</p>
+      </div>
+    </footer>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
