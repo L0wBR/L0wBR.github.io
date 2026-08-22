@@ -24,7 +24,7 @@ function carregarProdutos() {
                     <h3>Oops! Nenhum Produto Disponível</h3>
                     <p>Parece que todos os nossos produtos foram comprados ou ainda não temos nenhum cadastrado.</p>
                     <p class="produtos-vazios-subtexto">Volte em breve para mais essências extraordinárias!</p>
-                    <button class="btn-admin-redirect" onclick="toggleAdmin()">⚙️ Ir para Admin</button>
+                    <button class="btn-admin-redirect" onclick="toggleAdmin()">Ir para Admin</button>
                 </div>
             </div>
         `;
