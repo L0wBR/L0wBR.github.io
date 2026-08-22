@@ -5,9 +5,12 @@ if (!localStorage.getItem("catalogoAraçaVazioInicializado")) {
 }
 
 // Começar sem produtos cadastrados; novos produtos continuam sendo salvos no localStorage.
-let produtos = carregarProdutosLocal() || [];
+let produtos = (carregarProdutosLocal() || []).map((produto) => ({
+  ...produto,
+  estoque: Number.isInteger(produto.estoque) ? produto.estoque : 0,
+}));
 
-// Carrinho de compras
+// Carrinho de reservas
 let carrinho = [];
 
 // Carregar produtos na página
@@ -22,7 +25,7 @@ function carregarProdutos() {
                 <div class="produtos-vazios-content">
                     <div class="produtos-vazios-emoji">📭</div>
                     <h3>Oops! Nenhum Produto Disponível</h3>
-                    <p>Parece que todos os nossos produtos foram comprados ou ainda não temos nenhum cadastrado.</p>
+                    <p>Parece que todos os nossos produtos foram reservados ou ainda não temos nenhum cadastrado.</p>
                     <p class="produtos-vazios-subtexto">Volte em breve para mais essências extraordinárias!</p>
                     <button class="btn-admin-redirect" onclick="toggleAdmin()">Ir para Admin</button>
                 </div>
@@ -40,7 +43,8 @@ function carregarProdutos() {
                 <h3>${produto.nome}</h3>
                 <p class="produto-descricao">${produto.descricao}</p>
                 <p class="produto-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</p>
-                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})">Adicionar ao Carrinho</button>
+                <p class="produto-estoque">Estoque: ${produto.estoque}</p>
+                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})" ${produto.estoque === 0 ? "disabled" : ""}>${produto.estoque === 0 ? "Indisponível" : "Adicionar ao Carrinho"}</button>
             </div>
         `;
     gridProdutos.appendChild(card);
@@ -51,6 +55,15 @@ function carregarProdutos() {
 function adicionarAoCarrinho(produtoId) {
   const produto = produtos.find((p) => p.id === produtoId);
   const itemExistente = carrinho.find((item) => item.id === produtoId);
+
+  if (
+    !produto ||
+    (itemExistente && itemExistente.quantidade >= produto.estoque) ||
+    (!itemExistente && produto.estoque <= 0)
+  ) {
+    alert("Este produto está sem estoque.");
+    return;
+  }
 
   if (itemExistente) {
     itemExistente.quantidade++;
@@ -77,6 +90,8 @@ function alterarQuantidade(produtoId, novaQuantidade) {
   if (item) {
     if (novaQuantidade <= 0) {
       removerDoCarrinho(produtoId);
+    } else if (novaQuantidade > item.quantidade) {
+      adicionarAoCarrinho(produtoId);
     } else {
       item.quantidade = novaQuantidade;
       atualizarCarrinho();
@@ -133,12 +148,35 @@ function toggleCarrinho() {
   overlay.classList.toggle("ativo");
 }
 
-// Checkout
+// Concluir reserva
 function checkout() {
   if (carrinho.length === 0) {
-    alert("Seu carrinho está vazio!");
+    alert("Sua reserva está vazia!");
     return;
   }
+
+  const estoqueInsuficiente = carrinho.some((item) => {
+    const produto = produtos.find(
+      (produtoAtual) => produtoAtual.id === item.id,
+    );
+    return !produto || produto.estoque < item.quantidade;
+  });
+
+  if (estoqueInsuficiente) {
+    alert(
+      "Um ou mais produtos não possuem estoque suficiente para esta reserva.",
+    );
+    return;
+  }
+
+  carrinho.forEach((item) => {
+    const produto = produtos.find(
+      (produtoAtual) => produtoAtual.id === item.id,
+    );
+    produto.estoque -= item.quantidade;
+  });
+  salvarProdutosLocal();
+  carregarProdutos();
 
   const total = carrinho.reduce(
     (sum, item) => sum + item.preco * item.quantidade,
@@ -149,7 +187,7 @@ function checkout() {
     .join(", ");
 
   alert(
-    `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado pela compra!`,
+    `Reserva confirmada!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado por reservar conosco!`,
   );
 
   carrinho = [];
@@ -227,11 +265,20 @@ function inicializarFormularioProduto() {
 function criarNovoProduto() {
   const nome = document.getElementById("prod-nome").value;
   const preco = parseFloat(document.getElementById("prod-preco").value);
+  const estoque = parseInt(document.getElementById("prod-estoque").value, 10);
   const descricao = document.getElementById("prod-descricao").value;
   const emoji = document.getElementById("prod-emoji").value;
 
   // Validar
-  if (!nome || !preco || !descricao || !emoji) {
+  if (
+    !nome ||
+    !Number.isFinite(preco) ||
+    preco < 0 ||
+    !Number.isInteger(estoque) ||
+    estoque < 0 ||
+    !descricao ||
+    !emoji
+  ) {
     alert("❌ Preencha todos os campos!");
     return;
   }
@@ -242,6 +289,7 @@ function criarNovoProduto() {
     nome: nome,
     descricao: descricao,
     preco: preco,
+    estoque: estoque,
     emoji: emoji,
   };
 
@@ -286,6 +334,7 @@ function listarProdutosAdmin() {
                 </div>
             </div>
             <div class="produto-admin-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</div>
+            <div>Estoque: ${produto.estoque}</div>
             <div class="produto-admin-actions">
                 <button class="btn-editar" onclick="editarProduto(${produto.id})">✏️ Editar</button>
                 <button class="btn-deletar" onclick="deletarProduto(${produto.id})">🗑️ Deletar</button>
@@ -377,9 +426,25 @@ function editarProduto(produtoId) {
   const novoPreco = prompt("Novo preço:", produto.preco);
   if (novoPreco === null) return;
 
+  const novoEstoque = prompt("Novo estoque:", produto.estoque);
+  if (novoEstoque === null) return;
+
+  const preco = parseFloat(novoPreco);
+  const estoque = parseInt(novoEstoque, 10);
+  if (
+    !Number.isFinite(preco) ||
+    preco < 0 ||
+    !Number.isInteger(estoque) ||
+    estoque < 0
+  ) {
+    alert("Preço ou estoque inválido.");
+    return;
+  }
+
   produto.nome = novoNome;
   produto.descricao = novaDescricao;
-  produto.preco = parseFloat(novoPreco);
+  produto.preco = preco;
+  produto.estoque = estoque;
 
   salvarProdutosLocal();
   carregarProdutos();

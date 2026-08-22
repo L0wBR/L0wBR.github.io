@@ -73,7 +73,7 @@
           <span id="total-preco">R$ 0,00</span>
         </div>
         <button class="btn-checkout" onclick="checkout()">
-          Finalizar Compra
+          Concluir Reserva
         </button>
       </div>
     </div>
@@ -114,6 +114,17 @@
                     required
                   />
                 </div>
+                <div class="form-group">
+                  <label for="prod-estoque">Estoque:</label>
+                  <input
+                    type="number"
+                    id="prod-estoque"
+                    placeholder="0"
+                    min="0"
+                    step="1"
+                    required
+                  />
+                </div>
               </div>
 
               <div class="form-row">
@@ -123,6 +134,19 @@
                     type="text"
                     id="prod-descricao"
                     placeholder="Descrição do produto"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="prod-emoji">Emoji:</label>
+                  <input
+                    type="text"
+                    id="prod-emoji"
+                    placeholder="Ex.: 🌿"
+                    maxlength="4"
                     required
                   />
                 </div>
