@@ -187,7 +187,7 @@ function checkout() {
     .join(", ");
 
   alert(
-    `Reserva confirmada!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado por reservar conosco!`,
+    `🎉 Reserva confirmada com sucesso!\n\nProdutos: ${items} | Total: R$ ${total.toFixed(2).replace(".", ",")}\n\nSeu pedido já está separado e te esperando!\nBasta vir retirá-lo pessoalmente em nossa loja!`,
   );
 
   carrinho = [];
