@@ -1,22 +1,33 @@
-// Limpar uma única vez os produtos antigos antes de iniciar o catálogo vazio.
-if (!localStorage.getItem("catalogoAraçaVazioInicializado")) {
-  localStorage.removeItem("produtosAraça");
-  localStorage.setItem("catalogoAraçaVazioInicializado", "true");
-}
+// Produtos: agora vêm do backend (SQLite), não mais do localStorage.
+let produtos = [];
 
-// Começar sem produtos cadastrados; novos produtos continuam sendo salvos no localStorage
-// (a migração dos produtos para o servidor ainda não foi feita — só usuários/permissões).
-let produtos = carregarProdutosLocal() || [];
-
-// Carrinho de compras
+// Carrinho de compras (continua só na memória da aba, isso é intencional —
+// o carrinho não precisa persistir entre sessões, só o estoque precisa)
 let carrinho = [];
 
-// Carregar produtos na página
-function carregarProdutos() {
+// Busca a lista de produtos na API e atualiza a variável global `produtos`
+async function buscarProdutos() {
+  try {
+    const resposta = await fetch("/products");
+    if (!resposta.ok) throw new Error("Falha ao buscar produtos");
+    produtos = await resposta.json();
+  } catch (erro) {
+    console.error("Erro ao buscar produtos:", erro);
+    produtos = [];
+  }
+  return produtos;
+}
+
+// Carregar produtos na página (público)
+async function carregarProdutos() {
+  await buscarProdutos();
+  renderizarGridProdutos();
+}
+
+function renderizarGridProdutos() {
   const gridProdutos = document.getElementById("grid-produtos");
   gridProdutos.innerHTML = "";
 
-  // Verificar se não há produtos
   if (produtos.length === 0) {
     gridProdutos.innerHTML = `
             <div class="produtos-vazios-container">
@@ -33,6 +44,9 @@ function carregarProdutos() {
   }
 
   produtos.forEach((produto) => {
+    const estoque = produto.estoque ?? 0;
+    const semEstoque = estoque <= 0;
+
     const card = document.createElement("div");
     card.className = "produto-card";
     card.innerHTML = `
@@ -41,7 +55,10 @@ function carregarProdutos() {
                 <h3>${produto.nome}</h3>
                 <p class="produto-descricao">${produto.descricao}</p>
                 <p class="produto-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</p>
-                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})">Adicionar ao Carrinho</button>
+                <p class="produto-estoque">${semEstoque ? "Esgotado" : `${estoque} em estoque`}</p>
+                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})" ${semEstoque ? "disabled" : ""}>
+                  ${semEstoque ? "Esgotado" : "Adicionar ao Carrinho"}
+                </button>
             </div>
         `;
     gridProdutos.appendChild(card);
@@ -51,7 +68,16 @@ function carregarProdutos() {
 // Adicionar produto ao carrinho
 function adicionarAoCarrinho(produtoId) {
   const produto = produtos.find((p) => p.id === produtoId);
+  if (!produto) return;
+
+  const estoqueDisponivel = produto.estoque ?? 0;
   const itemExistente = carrinho.find((item) => item.id === produtoId);
+  const quantidadeNoCarrinho = itemExistente ? itemExistente.quantidade : 0;
+
+  if (quantidadeNoCarrinho >= estoqueDisponivel) {
+    alert(`❌ Não há mais estoque disponível de ${produto.nome}!`);
+    return;
+  }
 
   if (itemExistente) {
     itemExistente.quantidade++;
@@ -75,14 +101,23 @@ function removerDoCarrinho(produtoId) {
 // Alterar quantidade
 function alterarQuantidade(produtoId, novaQuantidade) {
   const item = carrinho.find((i) => i.id === produtoId);
-  if (item) {
-    if (novaQuantidade <= 0) {
-      removerDoCarrinho(produtoId);
-    } else {
-      item.quantidade = novaQuantidade;
-      atualizarCarrinho();
-    }
+  if (!item) return;
+
+  if (novaQuantidade <= 0) {
+    removerDoCarrinho(produtoId);
+    return;
   }
+
+  const produto = produtos.find((p) => p.id === produtoId);
+  const estoqueDisponivel = produto ? (produto.estoque ?? 0) : 0;
+
+  if (novaQuantidade > estoqueDisponivel) {
+    alert(`❌ Só há ${estoqueDisponivel} unidade(s) em estoque!`);
+    return;
+  }
+
+  item.quantidade = novaQuantidade;
+  atualizarCarrinho();
 }
 
 // Atualizar exibição do carrinho
@@ -134,28 +169,44 @@ function toggleCarrinho() {
   overlay.classList.toggle("ativo");
 }
 
-// Checkout
-function checkout() {
+// Checkout — o servidor confere e desconta o estoque de verdade;
+// o navegador só avisa o resultado.
+async function checkout() {
   if (carrinho.length === 0) {
     alert("Seu carrinho está vazio!");
     return;
   }
 
-  const total = carrinho.reduce(
-    (sum, item) => sum + item.preco * item.quantidade,
-    0,
-  );
-  const items = carrinho
-    .map((item) => `${item.nome} (${item.quantidade}x)`)
-    .join(", ");
+  const itens = carrinho.map((item) => ({ id: item.id, quantidade: item.quantidade }));
+  const total = carrinho.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
+  const items = carrinho.map((item) => `${item.nome} (${item.quantidade}x)`).join(", ");
 
-  alert(
-    `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado pela compra!`,
-  );
+  try {
+    const resposta = await fetch("/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itens }),
+    });
 
-  carrinho = [];
-  atualizarCarrinho();
-  toggleCarrinho();
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      alert(`❌ ${dados.error}\n\nO carrinho foi atualizado com o estoque atual.`);
+      await carregarProdutos();
+      return;
+    }
+
+    alert(
+      `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado pela compra!`,
+    );
+
+    carrinho = [];
+    atualizarCarrinho();
+    toggleCarrinho();
+    await carregarProdutos();
+  } catch (erro) {
+    alert("❌ Não foi possível conectar ao servidor para finalizar a compra.");
+  }
 }
 
 // Enviar mensagem de contato
@@ -178,17 +229,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // ============= SISTEMA DE ADMIN =============
-
-// Carregar produtos do localStorage
-function carregarProdutosLocal() {
-  const produtosLocal = localStorage.getItem("produtosAraça");
-  return produtosLocal ? JSON.parse(produtosLocal) : null;
-}
-
-// Salvar produtos no localStorage
-function salvarProdutosLocal() {
-  localStorage.setItem("produtosAraça", JSON.stringify(produtos));
-}
 
 // Toggle modal admin
 function toggleAdmin() {
@@ -224,51 +264,60 @@ function inicializarFormularioProduto() {
   }
 }
 
-// Criar novo produto
-function criarNovoProduto() {
+// Criar novo produto (via API)
+async function criarNovoProduto() {
   const nome = document.getElementById("prod-nome").value;
   const preco = parseFloat(document.getElementById("prod-preco").value);
   const descricao = document.getElementById("prod-descricao").value;
+  const estoqueInput = document.getElementById("prod-estoque");
+  const estoque = estoqueInput ? parseInt(estoqueInput.value, 10) : 0;
   const emojiInput = document.getElementById("prod-emoji");
-  const emoji = emojiInput ? emojiInput.value : "🌿";
+  const emoji = emojiInput && emojiInput.value ? emojiInput.value : "🌿";
 
-  // Validar
-  if (!nome || !preco || !descricao) {
-    alert("❌ Preencha todos os campos!");
+  if (!nome || isNaN(preco) || preco < 0 || !descricao || isNaN(estoque) || estoque < 0) {
+    alert("❌ Preencha todos os campos corretamente (preço e estoque não podem ser negativos)!");
     return;
   }
 
-  // Criar novo produto
-  const novoProduto = {
-    id: Date.now(),
-    nome: nome,
-    descricao: descricao,
-    preco: preco,
-    emoji: emoji,
-  };
+  const token = sessionStorage.getItem("authToken");
 
-  // Adicionar ao array
-  produtos.push(novoProduto);
-  salvarProdutosLocal();
+  try {
+    const resposta = await fetch("/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ nome, descricao, preco, estoque, emoji }),
+    });
 
-  // Limpar formulário
-  document.getElementById("form-novo-produto").reset();
+    const dados = await resposta.json();
 
-  // Atualizar display
-  carregarProdutos();
-  listarProdutosAdmin();
+    if (!resposta.ok) {
+      alert("❌ " + dados.error);
+      return;
+    }
 
-  alert("✅ Produto adicionado com sucesso!");
+    document.getElementById("form-novo-produto").reset();
+    await carregarProdutos();
+    await listarProdutosAdmin();
+
+    alert("✅ Produto adicionado com sucesso!");
+  } catch (erro) {
+    alert("❌ Não foi possível conectar ao servidor.");
+  }
 }
 
-// Listar produtos na interface admin
-function listarProdutosAdmin() {
+// Listar produtos na interface admin (busca sempre atualizado da API)
+async function listarProdutosAdmin() {
   const container = document.getElementById("produtos-admin");
   if (!usuarioTemPermissao("gerenciarProdutos")) {
     container.innerHTML =
       '<p class="produtos-vazio">Você não tem permissão para gerenciar produtos.</p>';
     return;
   }
+
+  await buscarProdutos();
 
   if (produtos.length === 0) {
     container.innerHTML =
@@ -288,6 +337,7 @@ function listarProdutosAdmin() {
                 </div>
             </div>
             <div class="produto-admin-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</div>
+            <div class="produto-admin-estoque">Estoque: ${produto.estoque ?? 0}</div>
             <div class="produto-admin-actions">
                 <button class="btn-editar" onclick="editarProduto(${produto.id})">✏️ Editar</button>
                 <button class="btn-deletar" onclick="deletarProduto(${produto.id})">🗑️ Deletar</button>
@@ -364,10 +414,7 @@ async function listarUsuariosAdmin() {
 
 // Alterar uma permissão de um usuário
 async function alterarPermissaoUsuario(username, permissao, habilitada) {
-  if (
-    !usuarioTemPermissao("gerenciarUsuarios") ||
-    username === "admin@araca.com"
-  ) {
+  if (!usuarioTemPermissao("gerenciarUsuarios") || username === "admin@araca.com") {
     return;
   }
 
@@ -396,19 +443,35 @@ async function alterarPermissaoUsuario(username, permissao, habilitada) {
   }
 }
 
-// Deletar produto
-function deletarProduto(produtoId) {
-  if (confirm("Tem certeza que deseja deletar este produto?")) {
-    produtos = produtos.filter((p) => p.id !== produtoId);
-    salvarProdutosLocal();
-    carregarProdutos();
-    listarProdutosAdmin();
+// Deletar produto (via API)
+async function deletarProduto(produtoId) {
+  if (!confirm("Tem certeza que deseja deletar este produto?")) return;
+
+  const token = sessionStorage.getItem("authToken");
+
+  try {
+    const resposta = await fetch(`/products/${produtoId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      alert("❌ " + (dados.error || "Erro ao deletar produto."));
+      return;
+    }
+
+    await carregarProdutos();
+    await listarProdutosAdmin();
     alert("✅ Produto deletado com sucesso!");
+  } catch (erro) {
+    alert("❌ Não foi possível conectar ao servidor.");
   }
 }
 
-// Editar produto
-function editarProduto(produtoId) {
+// Editar produto (via API)
+async function editarProduto(produtoId) {
   const produto = produtos.find((p) => p.id === produtoId);
   if (!produto) return;
 
@@ -421,13 +484,38 @@ function editarProduto(produtoId) {
   const novoPreco = prompt("Novo preço:", produto.preco);
   if (novoPreco === null) return;
 
-  produto.nome = novoNome;
-  produto.descricao = novaDescricao;
-  produto.preco = parseFloat(novoPreco);
+  const novoEstoque = prompt("Novo estoque:", produto.estoque ?? 0);
+  if (novoEstoque === null) return;
 
-  salvarProdutosLocal();
-  carregarProdutos();
-  listarProdutosAdmin();
+  const token = sessionStorage.getItem("authToken");
 
-  alert("✅ Produto editado com sucesso!");
+  try {
+    const resposta = await fetch(`/products/${produtoId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        nome: novoNome,
+        descricao: novaDescricao,
+        preco: parseFloat(novoPreco),
+        estoque: parseInt(novoEstoque, 10),
+        emoji: produto.emoji,
+      }),
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      alert("❌ " + (dados.error || "Erro ao editar produto."));
+      return;
+    }
+
+    await carregarProdutos();
+    await listarProdutosAdmin();
+    alert("✅ Produto editado com sucesso!");
+  } catch (erro) {
+    alert("❌ Não foi possível conectar ao servidor.");
+  }
 }

@@ -73,7 +73,7 @@
           <span id="total-preco">R$ 0,00</span>
         </div>
         <button class="btn-checkout" onclick="checkout()">
-          Concluir Reserva
+          Finalizar Compra
         </button>
       </div>
     </div>
@@ -114,8 +114,20 @@
                     required
                   />
                 </div>
+              </div>
+
+              <div class="form-row">
                 <div class="form-group">
-                  <label for="prod-estoque">Estoque:</label>
+                  <label>Descrição:</label>
+                  <input
+                    type="text"
+                    id="prod-descricao"
+                    placeholder="Descrição do produto"
+                    required
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Estoque:</label>
                   <input
                     type="number"
                     id="prod-estoque"
@@ -129,26 +141,8 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>Descrição:</label>
-                  <input
-                    type="text"
-                    id="prod-descricao"
-                    placeholder="Descrição do produto"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="prod-emoji">Emoji:</label>
-                  <input
-                    type="text"
-                    id="prod-emoji"
-                    placeholder="Ex.: 🌿"
-                    maxlength="4"
-                    required
-                  />
+                  <label>Emoji:</label>
+                  <input type="text" id="prod-emoji" placeholder="🌿" />
                 </div>
               </div>
 
@@ -184,8 +178,8 @@
       <div class="container">
         <h2 class="titulo-secao">Sobre a Aromas Araçá</h2>
         <p>
-          A Aromas Araçá é uma marca dedicada a criar essências artesanais de alta
-          qualidade, proporcionando experiências olfativas únicas. Nossos
+          A Aromas Araçá é uma marca dedicada a criar essências artesanais de
+          alta qualidade, proporcionando experiências olfativas únicas. Nossos
           produtos são feitos com ingredientes selecionados e técnicas
           artesanais, no IFAM (Instituto Federal do Amazonas).
         </p>
