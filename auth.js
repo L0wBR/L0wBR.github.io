@@ -1,43 +1,5 @@
-// Sistema de Autenticação
-const ADMIN_PADRAO = {
-  id: "admin-padrao",
-  nome: "Administrador",
-  email: "admin@araca.com",
-  senha: "admin123",
-  funcao: "admin",
-  permissoes: {
-    gerenciarProdutos: true,
-    gerenciarUsuarios: true,
-  },
-  dataCadastro: "21/08/2026",
-};
-
-function carregarUsuarios() {
-  return JSON.parse(localStorage.getItem("usuarios")) || [];
-}
-
-function salvarUsuarios(usuarios) {
-  localStorage.setItem("usuarios", JSON.stringify(usuarios));
-}
-
-function garantirContaAdmin() {
-  const usuarios = carregarUsuarios();
-  const adminExistente = usuarios.find(
-    (usuario) => usuario.email === ADMIN_PADRAO.email,
-  );
-
-  if (!adminExistente) {
-    usuarios.push({ ...ADMIN_PADRAO });
-    salvarUsuarios(usuarios);
-    return;
-  }
-
-  adminExistente.nome = ADMIN_PADRAO.nome;
-  adminExistente.senha = ADMIN_PADRAO.senha;
-  adminExistente.funcao = "admin";
-  adminExistente.permissoes = { ...ADMIN_PADRAO.permissoes };
-  salvarUsuarios(usuarios);
-}
+// Sistema de Autenticação — agora fala com a API no servidor (Node/Express + SQLite)
+// em vez de guardar os usuários no localStorage do navegador.
 
 function usuarioAtualEhAdmin() {
   return sessionStorage.getItem("usuarioFuncao") === "admin";
@@ -65,7 +27,6 @@ function configurarAcessoAdmin() {
 
 // Verificar se usuário está autenticado ao carregar
 window.addEventListener("DOMContentLoaded", function () {
-  garantirContaAdmin();
   const usuarioAutenticado = sessionStorage.getItem("usuarioAutenticado");
   const paginaAtual = window.location.pathname.split("/").pop() || "index.html";
 
@@ -96,7 +57,6 @@ window.addEventListener("DOMContentLoaded", function () {
 function inicializarLogin() {
   const loginForm = document.getElementById("login-form");
   const registroForm = document.getElementById("registro-form");
-  const erroMensagem = document.getElementById("erro-mensagem");
 
   if (loginForm) {
     loginForm.addEventListener("submit", function (e) {
@@ -123,55 +83,67 @@ function toggleForm(event) {
   loginForm.classList.toggle("ativo");
   registroForm.classList.toggle("ativo");
 
-  // Limpar mensagens de erro
   erroMensagem.textContent = "";
 }
 
-// Fazer login
-function fazerLogin() {
+// Guarda na sessão da aba atual os dados que a API devolveu
+// (a API é quem decide nome, função e permissões — não o navegador)
+function salvarSessaoUsuario(usuario) {
+  sessionStorage.setItem("usuarioAutenticado", "true");
+  sessionStorage.setItem("usuarioEmail", usuario.username);
+  sessionStorage.setItem("nomeusuario", usuario.name);
+  sessionStorage.setItem("usuarioFuncao", usuario.funcao);
+  sessionStorage.setItem(
+    "usuarioPermissoes",
+    JSON.stringify(usuario.permissoes),
+  );
+  sessionStorage.setItem("authToken", usuario.token);
+}
+
+// Fazer login (via API)
+async function fazerLogin() {
   const email = document.getElementById("login-email").value;
   const senha = document.getElementById("login-senha").value;
   const erroMensagem = document.getElementById("erro-mensagem");
 
-  // Recuperar usuários do localStorage
-  const usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
+  try {
+    const resposta = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: email, password: senha }),
+    });
 
-  // Encontrar usuário com email e senha
-  const usuario = usuarios.find((u) => u.email === email && u.senha === senha);
+    const dados = await resposta.json();
 
-  if (usuario) {
-    // Autenticar usuário
-    sessionStorage.setItem("usuarioAutenticado", "true");
-    sessionStorage.setItem("usuarioEmail", usuario.email);
-    sessionStorage.setItem("nomeusuario", usuario.nome);
-    sessionStorage.setItem("usuarioFuncao", usuario.funcao || "usuario");
-    sessionStorage.setItem(
-      "usuarioPermissoes",
-      JSON.stringify(usuario.permissoes || {}),
-    );
+    if (!resposta.ok) {
+      erroMensagem.textContent = "❌ " + dados.error;
+      erroMensagem.style.display = "block";
+      return;
+    }
+
+    salvarSessaoUsuario(dados);
 
     erroMensagem.textContent = "";
     mostrarSucesso("Login realizado com sucesso!");
 
-    // Redirecionar após 1 segundo
     setTimeout(() => {
       window.location.href = "index.html";
     }, 1000);
-  } else {
-    erroMensagem.textContent = "❌ Email ou senha incorretos!";
+  } catch (erro) {
+    erroMensagem.textContent = "❌ Não foi possível conectar ao servidor.";
     erroMensagem.style.display = "block";
   }
 }
 
-// Criar nova conta
-function criarConta() {
+// Criar nova conta (via API)
+async function criarConta() {
   const nome = document.getElementById("registro-nome").value;
   const email = document.getElementById("registro-email").value;
   const senha = document.getElementById("registro-senha").value;
   const confirmar = document.getElementById("registro-confirmar").value;
   const erroMensagem = document.getElementById("erro-mensagem");
 
-  // Validações
+  // Validações locais (não substituem as validações do servidor)
   if (senha !== confirmar) {
     erroMensagem.textContent = "❌ As senhas não conferem!";
     erroMensagem.style.display = "block";
@@ -184,52 +156,33 @@ function criarConta() {
     return;
   }
 
-  // Recuperar usuários existentes
-  const usuarios = JSON.parse(localStorage.getItem("usuarios")) || [];
+  try {
+    const resposta = await fetch("/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: nome, username: email, password: senha }),
+    });
 
-  // Verificar se email já existe
-  if (usuarios.some((u) => u.email === email)) {
-    erroMensagem.textContent =
-      "❌ Email já cadastrado! Faça login ou use outro email.";
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      erroMensagem.textContent = "❌ " + dados.error;
+      erroMensagem.style.display = "block";
+      return;
+    }
+
+    salvarSessaoUsuario(dados);
+
+    erroMensagem.textContent = "";
+    mostrarSucesso("Conta criada com sucesso! Redirecionando...");
+
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1000);
+  } catch (erro) {
+    erroMensagem.textContent = "❌ Não foi possível conectar ao servidor.";
     erroMensagem.style.display = "block";
-    return;
   }
-
-  // Criar novo usuário
-  const novoUsuario = {
-    id: Date.now(),
-    nome: nome,
-    email: email,
-    senha: senha,
-    funcao: "usuario",
-    permissoes: {
-      gerenciarProdutos: false,
-      gerenciarUsuarios: false,
-    },
-    dataCadastro: new Date().toLocaleDateString("pt-BR"),
-  };
-
-  // Salvar no localStorage
-  usuarios.push(novoUsuario);
-  localStorage.setItem("usuarios", JSON.stringify(usuarios));
-
-  // Autenticar automaticamente
-  sessionStorage.setItem("usuarioAutenticado", "true");
-  sessionStorage.setItem("usuarioEmail", email);
-  sessionStorage.setItem("nomeusuario", nome);
-  sessionStorage.setItem("usuarioFuncao", "usuario");
-  sessionStorage.setItem(
-    "usuarioPermissoes",
-    JSON.stringify(novoUsuario.permissoes),
-  );
-
-  erroMensagem.textContent = "";
-  mostrarSucesso("Conta criada com sucesso! Redirecionando...");
-
-  // Redirecionar após 1 segundo
-  setTimeout(() => {
-    window.location.href = "index.html";
-  }, 1000);
 }
 
 // Fazer logout (será chamado do index.html)
@@ -240,6 +193,7 @@ function fazerLogout() {
     sessionStorage.removeItem("nomeusuario");
     sessionStorage.removeItem("usuarioFuncao");
     sessionStorage.removeItem("usuarioPermissoes");
+    sessionStorage.removeItem("authToken");
     window.location.href = "login.html";
   }
 }
@@ -249,18 +203,15 @@ function adicionarBotaoLogout(nome) {
   const header = document.querySelector(".header");
   if (!header) return;
 
-  // Procurar botão de logout existente
   let logoutBtn = document.getElementById("logout-btn");
 
   if (!logoutBtn) {
-    // Criar botão de logout
     logoutBtn = document.createElement("button");
     logoutBtn.id = "logout-btn";
     logoutBtn.className = "logout-btn";
     logoutBtn.innerHTML = `👤 ${nome} <span class="logout-texto">Sair</span>`;
     logoutBtn.onclick = fazerLogout;
 
-    // Adicionar antes do botão de carrinho
     const carrinhoBtn = document.querySelector(".carrinho-btn");
     if (carrinhoBtn) {
       carrinhoBtn.parentNode.insertBefore(logoutBtn, carrinhoBtn);

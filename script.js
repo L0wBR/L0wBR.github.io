@@ -4,13 +4,11 @@ if (!localStorage.getItem("catalogoAraçaVazioInicializado")) {
   localStorage.setItem("catalogoAraçaVazioInicializado", "true");
 }
 
-// Começar sem produtos cadastrados; novos produtos continuam sendo salvos no localStorage.
-let produtos = (carregarProdutosLocal() || []).map((produto) => ({
-  ...produto,
-  estoque: Number.isInteger(produto.estoque) ? produto.estoque : 0,
-}));
+// Começar sem produtos cadastrados; novos produtos continuam sendo salvos no localStorage
+// (a migração dos produtos para o servidor ainda não foi feita — só usuários/permissões).
+let produtos = carregarProdutosLocal() || [];
 
-// Carrinho de reservas
+// Carrinho de compras
 let carrinho = [];
 
 // Carregar produtos na página
@@ -25,9 +23,9 @@ function carregarProdutos() {
                 <div class="produtos-vazios-content">
                     <div class="produtos-vazios-emoji">📭</div>
                     <h3>Oops! Nenhum Produto Disponível</h3>
-                    <p>Parece que todos os nossos produtos foram reservados ou ainda não temos nenhum cadastrado.</p>
+                    <p>Parece que todos os nossos produtos foram comprados ou ainda não temos nenhum cadastrado.</p>
                     <p class="produtos-vazios-subtexto">Volte em breve para mais essências extraordinárias!</p>
-                    <button class="btn-admin-redirect" onclick="toggleAdmin()">Ir para Admin</button>
+                    <button class="btn-admin-redirect" onclick="toggleAdmin()">⚙️ Ir para Admin</button>
                 </div>
             </div>
         `;
@@ -43,8 +41,7 @@ function carregarProdutos() {
                 <h3>${produto.nome}</h3>
                 <p class="produto-descricao">${produto.descricao}</p>
                 <p class="produto-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</p>
-                <p class="produto-estoque">Estoque: ${produto.estoque}</p>
-                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})" ${produto.estoque === 0 ? "disabled" : ""}>${produto.estoque === 0 ? "Indisponível" : "Adicionar ao Carrinho"}</button>
+                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})">Adicionar ao Carrinho</button>
             </div>
         `;
     gridProdutos.appendChild(card);
@@ -55,15 +52,6 @@ function carregarProdutos() {
 function adicionarAoCarrinho(produtoId) {
   const produto = produtos.find((p) => p.id === produtoId);
   const itemExistente = carrinho.find((item) => item.id === produtoId);
-
-  if (
-    !produto ||
-    (itemExistente && itemExistente.quantidade >= produto.estoque) ||
-    (!itemExistente && produto.estoque <= 0)
-  ) {
-    alert("Este produto está sem estoque.");
-    return;
-  }
 
   if (itemExistente) {
     itemExistente.quantidade++;
@@ -90,8 +78,6 @@ function alterarQuantidade(produtoId, novaQuantidade) {
   if (item) {
     if (novaQuantidade <= 0) {
       removerDoCarrinho(produtoId);
-    } else if (novaQuantidade > item.quantidade) {
-      adicionarAoCarrinho(produtoId);
     } else {
       item.quantidade = novaQuantidade;
       atualizarCarrinho();
@@ -148,35 +134,12 @@ function toggleCarrinho() {
   overlay.classList.toggle("ativo");
 }
 
-// Concluir reserva
+// Checkout
 function checkout() {
   if (carrinho.length === 0) {
-    alert("Sua reserva está vazia!");
+    alert("Seu carrinho está vazio!");
     return;
   }
-
-  const estoqueInsuficiente = carrinho.some((item) => {
-    const produto = produtos.find(
-      (produtoAtual) => produtoAtual.id === item.id,
-    );
-    return !produto || produto.estoque < item.quantidade;
-  });
-
-  if (estoqueInsuficiente) {
-    alert(
-      "Um ou mais produtos não possuem estoque suficiente para esta reserva.",
-    );
-    return;
-  }
-
-  carrinho.forEach((item) => {
-    const produto = produtos.find(
-      (produtoAtual) => produtoAtual.id === item.id,
-    );
-    produto.estoque -= item.quantidade;
-  });
-  salvarProdutosLocal();
-  carregarProdutos();
 
   const total = carrinho.reduce(
     (sum, item) => sum + item.preco * item.quantidade,
@@ -187,7 +150,7 @@ function checkout() {
     .join(", ");
 
   alert(
-    `🎉 Reserva confirmada com sucesso!\n\nProdutos: ${items} | Total: R$ ${total.toFixed(2).replace(".", ",")}\n\nSeu pedido já está separado e te esperando!\nBasta vir retirá-lo pessoalmente em nossa loja!`,
+    `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado pela compra!`,
   );
 
   carrinho = [];
@@ -265,20 +228,12 @@ function inicializarFormularioProduto() {
 function criarNovoProduto() {
   const nome = document.getElementById("prod-nome").value;
   const preco = parseFloat(document.getElementById("prod-preco").value);
-  const estoque = parseInt(document.getElementById("prod-estoque").value, 10);
   const descricao = document.getElementById("prod-descricao").value;
-  const emoji = document.getElementById("prod-emoji").value;
+  const emojiInput = document.getElementById("prod-emoji");
+  const emoji = emojiInput ? emojiInput.value : "🌿";
 
   // Validar
-  if (
-    !nome ||
-    !Number.isFinite(preco) ||
-    preco < 0 ||
-    !Number.isInteger(estoque) ||
-    estoque < 0 ||
-    !descricao ||
-    !emoji
-  ) {
+  if (!nome || !preco || !descricao) {
     alert("❌ Preencha todos os campos!");
     return;
   }
@@ -289,7 +244,6 @@ function criarNovoProduto() {
     nome: nome,
     descricao: descricao,
     preco: preco,
-    estoque: estoque,
     emoji: emoji,
   };
 
@@ -334,7 +288,6 @@ function listarProdutosAdmin() {
                 </div>
             </div>
             <div class="produto-admin-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</div>
-            <div>Estoque: ${produto.estoque}</div>
             <div class="produto-admin-actions">
                 <button class="btn-editar" onclick="editarProduto(${produto.id})">✏️ Editar</button>
                 <button class="btn-deletar" onclick="deletarProduto(${produto.id})">🗑️ Deletar</button>
@@ -345,10 +298,12 @@ function listarProdutosAdmin() {
     .join("");
 }
 
+// ---------- Gestão de usuários e permissões (via API) ----------
+
 // Listar contas e suas permissões
-function listarUsuariosAdmin() {
+async function listarUsuariosAdmin() {
   const container = document.getElementById("usuarios-admin");
-  if (!container || typeof carregarUsuarios !== "function") return;
+  if (!container) return;
 
   if (!usuarioTemPermissao("gerenciarUsuarios")) {
     container.innerHTML =
@@ -356,49 +311,89 @@ function listarUsuariosAdmin() {
     return;
   }
 
-  const usuarios = carregarUsuarios();
-  container.innerHTML = usuarios
-    .map((usuario) => {
-      const permissoes = usuario.permissoes || {};
-      const contaPrincipal = usuario.email === "admin@araca.com";
-      const controles = contaPrincipal
-        ? '<p class="permissoes-bloqueadas">Administrador principal: permissões protegidas</p>'
-        : `
-          <label class="permissao-item">
-            <input type="checkbox" ${permissoes.gerenciarProdutos ? "checked" : ""}
-              onchange="alterarPermissaoUsuario('${usuario.email}', 'gerenciarProdutos', this.checked)">
-            Gerenciar produtos
-          </label>
-          <label class="permissao-item">
-            <input type="checkbox" ${permissoes.gerenciarUsuarios ? "checked" : ""}
-              onchange="alterarPermissaoUsuario('${usuario.email}', 'gerenciarUsuarios', this.checked)">
-            Gerenciar contas
-          </label>
-        `;
+  const token = sessionStorage.getItem("authToken");
 
-      return `
-        <div class="usuario-admin-card">
-          <div>
-            <h4>${usuario.nome}</h4>
-            <p>${usuario.email} · ${usuario.funcao || "usuario"}</p>
+  try {
+    const resposta = await fetch("/users", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!resposta.ok) {
+      container.innerHTML =
+        '<p class="produtos-vazio">Não foi possível carregar as contas.</p>';
+      return;
+    }
+
+    const usuarios = await resposta.json();
+
+    container.innerHTML = usuarios
+      .map((usuario) => {
+        const permissoes = usuario.permissoes || {};
+        const contaPrincipal = usuario.username === "admin@araca.com";
+        const controles = contaPrincipal
+          ? '<p class="permissoes-bloqueadas">Administrador principal: permissões protegidas</p>'
+          : `
+            <label class="permissao-item">
+              <input type="checkbox" ${permissoes.gerenciarProdutos ? "checked" : ""}
+                onchange="alterarPermissaoUsuario('${usuario.username}', 'gerenciarProdutos', this.checked)">
+              Gerenciar produtos
+            </label>
+            <label class="permissao-item">
+              <input type="checkbox" ${permissoes.gerenciarUsuarios ? "checked" : ""}
+                onchange="alterarPermissaoUsuario('${usuario.username}', 'gerenciarUsuarios', this.checked)">
+              Gerenciar contas
+            </label>
+          `;
+
+        return `
+          <div class="usuario-admin-card">
+            <div>
+              <h4>${usuario.name}</h4>
+              <p>${usuario.username} · ${usuario.funcao}</p>
+            </div>
+            <div class="permissoes-lista">${controles}</div>
           </div>
-          <div class="permissoes-lista">${controles}</div>
-        </div>
-      `;
-    })
-    .join("");
+        `;
+      })
+      .join("");
+  } catch (erro) {
+    container.innerHTML =
+      '<p class="produtos-vazio">Erro ao conectar ao servidor.</p>';
+  }
 }
 
-function alterarPermissaoUsuario(email, permissao, habilitada) {
-  if (!usuarioAtualEhAdmin() || email === "admin@araca.com") return;
+// Alterar uma permissão de um usuário
+async function alterarPermissaoUsuario(username, permissao, habilitada) {
+  if (
+    !usuarioTemPermissao("gerenciarUsuarios") ||
+    username === "admin@araca.com"
+  ) {
+    return;
+  }
 
-  const usuarios = carregarUsuarios();
-  const usuario = usuarios.find((item) => item.email === email);
-  if (!usuario) return;
+  const token = sessionStorage.getItem("authToken");
 
-  usuario.permissoes = usuario.permissoes || {};
-  usuario.permissoes[permissao] = habilitada;
-  salvarUsuarios(usuarios);
+  try {
+    const resposta = await fetch(
+      `/users/${encodeURIComponent(username)}/permissoes`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ permissao, habilitada }),
+      },
+    );
+
+    if (!resposta.ok) {
+      alert("❌ Não foi possível atualizar a permissão.");
+      listarUsuariosAdmin();
+    }
+  } catch (erro) {
+    alert("❌ Erro ao conectar ao servidor.");
+    listarUsuariosAdmin();
+  }
 }
 
 // Deletar produto
@@ -426,25 +421,9 @@ function editarProduto(produtoId) {
   const novoPreco = prompt("Novo preço:", produto.preco);
   if (novoPreco === null) return;
 
-  const novoEstoque = prompt("Novo estoque:", produto.estoque);
-  if (novoEstoque === null) return;
-
-  const preco = parseFloat(novoPreco);
-  const estoque = parseInt(novoEstoque, 10);
-  if (
-    !Number.isFinite(preco) ||
-    preco < 0 ||
-    !Number.isInteger(estoque) ||
-    estoque < 0
-  ) {
-    alert("Preço ou estoque inválido.");
-    return;
-  }
-
   produto.nome = novoNome;
   produto.descricao = novaDescricao;
-  produto.preco = preco;
-  produto.estoque = estoque;
+  produto.preco = parseFloat(novoPreco);
 
   salvarProdutosLocal();
   carregarProdutos();
