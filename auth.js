@@ -93,10 +93,7 @@ function salvarSessaoUsuario(usuario) {
   sessionStorage.setItem("usuarioEmail", usuario.username);
   sessionStorage.setItem("nomeusuario", usuario.name);
   sessionStorage.setItem("usuarioFuncao", usuario.funcao);
-  sessionStorage.setItem(
-    "usuarioPermissoes",
-    JSON.stringify(usuario.permissoes),
-  );
+  sessionStorage.setItem("usuarioPermissoes", JSON.stringify(usuario.permissoes));
   sessionStorage.setItem("authToken", usuario.token);
 }
 

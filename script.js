@@ -50,7 +50,6 @@ function renderizarGridProdutos() {
     const card = document.createElement("div");
     card.className = "produto-card";
     card.innerHTML = `
-            <div class="produto-imagem">${produto.emoji}</div>
             <div class="produto-info">
                 <h3>${produto.nome}</h3>
                 <p class="produto-descricao">${produto.descricao}</p>
@@ -140,7 +139,7 @@ function atualizarCarrinho() {
       .map(
         (item) => `
             <div class="carrinho-item">
-                <div class="carrinho-item-nome">${item.emoji} ${item.nome}</div>
+                <div class="carrinho-item-nome">${item.nome}</div>
                 <div class="carrinho-item-preco">R$ ${item.preco.toFixed(2).replace(".", ",")}</div>
                 <div class="carrinho-item-quantidade">
                     <button class="qty-btn" onclick="alterarQuantidade(${item.id}, ${item.quantidade - 1})">−</button>
@@ -271,8 +270,6 @@ async function criarNovoProduto() {
   const descricao = document.getElementById("prod-descricao").value;
   const estoqueInput = document.getElementById("prod-estoque");
   const estoque = estoqueInput ? parseInt(estoqueInput.value, 10) : 0;
-  const emojiInput = document.getElementById("prod-emoji");
-  const emoji = emojiInput && emojiInput.value ? emojiInput.value : "🌿";
 
   if (!nome || isNaN(preco) || preco < 0 || !descricao || isNaN(estoque) || estoque < 0) {
     alert("❌ Preencha todos os campos corretamente (preço e estoque não podem ser negativos)!");
@@ -288,7 +285,7 @@ async function criarNovoProduto() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ nome, descricao, preco, estoque, emoji }),
+      body: JSON.stringify({ nome, descricao, preco, estoque }),
     });
 
     const dados = await resposta.json();
@@ -330,7 +327,6 @@ async function listarProdutosAdmin() {
       (produto) => `
         <div class="produto-admin-card">
             <div class="produto-admin-header">
-                <div class="produto-admin-emoji">${produto.emoji}</div>
                 <div class="produto-admin-info">
                     <h4>${produto.nome}</h4>
                     <p>${produto.descricao}</p>
@@ -501,7 +497,6 @@ async function editarProduto(produtoId) {
         descricao: novaDescricao,
         preco: parseFloat(novoPreco),
         estoque: parseInt(novoEstoque, 10),
-        emoji: produto.emoji,
       }),
     });
 
