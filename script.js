@@ -176,21 +176,35 @@ async function checkout() {
     return;
   }
 
-  const itens = carrinho.map((item) => ({ id: item.id, quantidade: item.quantidade }));
-  const total = carrinho.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
-  const items = carrinho.map((item) => `${item.nome} (${item.quantidade}x)`).join(", ");
+  const itens = carrinho.map((item) => ({
+    id: item.id,
+    quantidade: item.quantidade,
+  }));
+  const total = carrinho.reduce(
+    (sum, item) => sum + item.preco * item.quantidade,
+    0,
+  );
+  const items = carrinho
+    .map((item) => `${item.nome} (${item.quantidade}x)`)
+    .join(", ");
+  const token = sessionStorage.getItem("authToken");
 
   try {
     const resposta = await fetch("/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({ itens }),
     });
 
     const dados = await resposta.json();
 
     if (!resposta.ok) {
-      alert(`❌ ${dados.error}\n\nO carrinho foi atualizado com o estoque atual.`);
+      alert(
+        `❌ ${dados.error}\n\nO carrinho foi atualizado com o estoque atual.`,
+      );
       await carregarProdutos();
       return;
     }
@@ -206,13 +220,6 @@ async function checkout() {
   } catch (erro) {
     alert("❌ Não foi possível conectar ao servidor para finalizar a compra.");
   }
-}
-
-// Enviar mensagem de contato
-function enviarMensagem(event) {
-  event.preventDefault();
-  alert("Mensagem enviada com sucesso! Entraremos em contato em breve.");
-  event.target.reset();
 }
 
 // Mostrar notificação
@@ -249,6 +256,7 @@ function toggleAdmin() {
   if (modal.classList.contains("ativo")) {
     listarProdutosAdmin();
     listarUsuariosAdmin();
+    carregarPedidosAdmin();
   }
 }
 
@@ -271,8 +279,17 @@ async function criarNovoProduto() {
   const estoqueInput = document.getElementById("prod-estoque");
   const estoque = estoqueInput ? parseInt(estoqueInput.value, 10) : 0;
 
-  if (!nome || isNaN(preco) || preco < 0 || !descricao || isNaN(estoque) || estoque < 0) {
-    alert("❌ Preencha todos os campos corretamente (preço e estoque não podem ser negativos)!");
+  if (
+    !nome ||
+    isNaN(preco) ||
+    preco < 0 ||
+    !descricao ||
+    isNaN(estoque) ||
+    estoque < 0
+  ) {
+    alert(
+      "❌ Preencha todos os campos corretamente (preço e estoque não podem ser negativos)!",
+    );
     return;
   }
 
@@ -410,7 +427,10 @@ async function listarUsuariosAdmin() {
 
 // Alterar uma permissão de um usuário
 async function alterarPermissaoUsuario(username, permissao, habilitada) {
-  if (!usuarioTemPermissao("gerenciarUsuarios") || username === "admin@araca.com") {
+  if (
+    !usuarioTemPermissao("gerenciarUsuarios") ||
+    username === "admin@araca.com"
+  ) {
     return;
   }
 
@@ -436,6 +456,70 @@ async function alterarPermissaoUsuario(username, permissao, habilitada) {
   } catch (erro) {
     alert("❌ Erro ao conectar ao servidor.");
     listarUsuariosAdmin();
+  }
+}
+
+// ---------- Pedidos/reservas (só administradores) ----------
+
+// Carrega e mostra quem reservou o quê. Só aparece pra quem é admin de
+// verdade (não basta ter a permissão de gerenciar produtos ou contas).
+async function carregarPedidosAdmin() {
+  const secao = document.getElementById("secao-pedidos-admin");
+  const container = document.getElementById("pedidos-admin");
+  if (!secao || !container) return;
+
+  if (typeof usuarioAtualEhAdmin !== "function" || !usuarioAtualEhAdmin()) {
+    secao.hidden = true;
+    return;
+  }
+
+  secao.hidden = false;
+
+  const token = sessionStorage.getItem("authToken");
+
+  try {
+    const resposta = await fetch("/orders", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!resposta.ok) {
+      container.innerHTML =
+        '<p class="produtos-vazio">Não foi possível carregar os pedidos.</p>';
+      return;
+    }
+
+    const pedidos = await resposta.json();
+
+    if (pedidos.length === 0) {
+      container.innerHTML =
+        '<p class="produtos-vazio">Nenhum pedido registrado ainda.</p>';
+      return;
+    }
+
+    container.innerHTML = pedidos
+      .map((pedido) => {
+        const itensHtml = pedido.itens
+          .map(
+            (item) =>
+              `<li>${item.quantidade}x ${item.nome} — R$ ${item.preco.toFixed(2).replace(".", ",")} cada</li>`,
+          )
+          .join("");
+
+        return `
+          <div class="pedido-admin-card">
+            <div class="pedido-admin-header">
+              <strong>${pedido.username}</strong>
+              <span>${pedido.data}</span>
+            </div>
+            <ul class="pedido-admin-itens">${itensHtml}</ul>
+            <div class="pedido-admin-total">Total: R$ ${pedido.total.toFixed(2).replace(".", ",")}</div>
+          </div>
+        `;
+      })
+      .join("");
+  } catch (erro) {
+    container.innerHTML =
+      '<p class="produtos-vazio">Erro ao conectar ao servidor.</p>';
   }
 }
 
