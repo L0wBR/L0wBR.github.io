@@ -243,8 +243,7 @@ function toggleAdmin() {
 
   if (
     typeof usuarioTemPermissao === "function" &&
-    !usuarioTemPermissao("gerenciarProdutos") &&
-    !usuarioTemPermissao("gerenciarUsuarios")
+    !usuarioTemPermissao("privilegiosAdministrativos")
   ) {
     alert("Acesso restrito ao administrador.");
     return;
@@ -325,7 +324,7 @@ async function criarNovoProduto() {
 // Listar produtos na interface admin (busca sempre atualizado da API)
 async function listarProdutosAdmin() {
   const container = document.getElementById("produtos-admin");
-  if (!usuarioTemPermissao("gerenciarProdutos")) {
+  if (!usuarioTemPermissao("privilegiosAdministrativos")) {
     container.innerHTML =
       '<p class="produtos-vazio">Você não tem permissão para gerenciar produtos.</p>';
     return;
@@ -368,7 +367,7 @@ async function listarUsuariosAdmin() {
   const container = document.getElementById("usuarios-admin");
   if (!container) return;
 
-  if (!usuarioTemPermissao("gerenciarUsuarios")) {
+  if (!usuarioTemPermissao("privilegiosAdministrativos")) {
     container.innerHTML =
       '<p class="produtos-vazio">Você não tem permissão para gerenciar contas.</p>';
     return;
@@ -397,14 +396,9 @@ async function listarUsuariosAdmin() {
           ? '<p class="permissoes-bloqueadas">Administrador principal: permissões protegidas</p>'
           : `
             <label class="permissao-item">
-              <input type="checkbox" ${permissoes.gerenciarProdutos ? "checked" : ""}
-                onchange="alterarPermissaoUsuario('${usuario.username}', 'gerenciarProdutos', this.checked)">
-              Gerenciar produtos
-            </label>
-            <label class="permissao-item">
-              <input type="checkbox" ${permissoes.gerenciarUsuarios ? "checked" : ""}
-                onchange="alterarPermissaoUsuario('${usuario.username}', 'gerenciarUsuarios', this.checked)">
-              Gerenciar contas
+              <input type="checkbox" ${permissoes.privilegiosAdministrativos ? "checked" : ""}
+                onchange="alterarPermissaoUsuario('${usuario.username}', this.checked)">
+              Privilégios Administrativos
             </label>
           `;
 
@@ -425,10 +419,10 @@ async function listarUsuariosAdmin() {
   }
 }
 
-// Alterar uma permissão de um usuário
-async function alterarPermissaoUsuario(username, permissao, habilitada) {
+// Alterar o privilégio administrativo de um usuário
+async function alterarPermissaoUsuario(username, habilitada) {
   if (
-    !usuarioTemPermissao("gerenciarUsuarios") ||
+    !usuarioTemPermissao("privilegiosAdministrativos") ||
     username === "admin@araca.com"
   ) {
     return;
@@ -445,7 +439,7 @@ async function alterarPermissaoUsuario(username, permissao, habilitada) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ permissao, habilitada }),
+        body: JSON.stringify({ habilitada }),
       },
     );
 

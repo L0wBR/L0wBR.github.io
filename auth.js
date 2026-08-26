@@ -16,11 +16,7 @@ function usuarioTemPermissao(permissao) {
 
 function configurarAcessoAdmin() {
   const botaoAdmin = document.querySelector(".admin-btn");
-  if (
-    botaoAdmin &&
-    !usuarioTemPermissao("gerenciarProdutos") &&
-    !usuarioTemPermissao("gerenciarUsuarios")
-  ) {
+  if (botaoAdmin && !usuarioTemPermissao("privilegiosAdministrativos")) {
     botaoAdmin.hidden = true;
   }
 }
@@ -93,7 +89,10 @@ function salvarSessaoUsuario(usuario) {
   sessionStorage.setItem("usuarioEmail", usuario.username);
   sessionStorage.setItem("nomeusuario", usuario.name);
   sessionStorage.setItem("usuarioFuncao", usuario.funcao);
-  sessionStorage.setItem("usuarioPermissoes", JSON.stringify(usuario.permissoes));
+  sessionStorage.setItem(
+    "usuarioPermissoes",
+    JSON.stringify(usuario.permissoes),
+  );
   sessionStorage.setItem("authToken", usuario.token);
 }
 
