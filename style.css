@@ -53,6 +53,13 @@ body {
   gap: 10px;
 }
 
+.logo img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .logo h1 {
   font-size: 1.8rem;
   font-weight: bold;
