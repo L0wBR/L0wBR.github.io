@@ -385,36 +385,6 @@ body {
   line-height: 1.8;
 }
 
-/* Contato */
-.contato {
-  padding: 60px 20px;
-  background-color: var(--cor-fundo);
-}
-
-.form-contato {
-  max-width: 600px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-contato input,
-.form-contato textarea {
-  padding: 1rem;
-  border: 2px solid var(--cor-secundaria);
-  border-radius: 5px;
-  font-family: inherit;
-  font-size: 1rem;
-}
-
-.form-contato input:focus,
-.form-contato textarea:focus {
-  outline: none;
-  border-color: var(--cor-primaria);
-  box-shadow: 0 0 5px rgba(139, 90, 60, 0.3);
-}
-
 /* Footer */
 .footer {
   background: linear-gradient(
@@ -872,10 +842,6 @@ body {
   gap: 0.8rem;
 }
 
-.produto-admin-emoji {
-  font-size: 2rem;
-}
-
 .produto-admin-info h4 {
   margin: 0;
   color: var(--cor-primaria);
@@ -976,6 +942,61 @@ body {
   color: var(--cor-destaque) !important;
   font-style: italic;
   margin-top: 0.8rem;
+}
+
+/* Pedidos / Reservas (admin) */
+.pedidos-admin {
+  display: grid;
+  gap: 1rem;
+}
+
+.pedido-admin-card {
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-secundaria);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.pedido-admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--cor-secundaria);
+}
+
+.pedido-admin-header strong {
+  color: var(--cor-primaria);
+}
+
+.pedido-admin-header span {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.pedido-admin-itens {
+  list-style: none;
+  margin: 0 0 0.8rem 0;
+  padding: 0;
+}
+
+.pedido-admin-itens li {
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+  color: var(--cor-texto);
+}
+
+.pedido-admin-itens li:not(:last-child) {
+  border-bottom: 1px dashed #e0d8ce;
+}
+
+.pedido-admin-total {
+  font-weight: bold;
+  color: var(--cor-destaque);
+  text-align: right;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--cor-secundaria);
 }
 
 .admin-credenciais {
