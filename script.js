@@ -8,11 +8,11 @@ let carrinho = [];
 // Busca a lista de produtos na API e atualiza a variável global `produtos`
 async function buscarProdutos() {
   try {
-    const resposta = await fetch("/products");
-    if (!resposta.ok) throw new Error("Falha ao buscar produtos");
+    const resposta = await fetch('/products');
+    if (!resposta.ok) throw new Error('Falha ao buscar produtos');
     produtos = await resposta.json();
   } catch (erro) {
-    console.error("Erro ao buscar produtos:", erro);
+    console.error('Erro ao buscar produtos:', erro);
     produtos = [];
   }
   return produtos;
@@ -25,8 +25,8 @@ async function carregarProdutos() {
 }
 
 function renderizarGridProdutos() {
-  const gridProdutos = document.getElementById("grid-produtos");
-  gridProdutos.innerHTML = "";
+  const gridProdutos = document.getElementById('grid-produtos');
+  gridProdutos.innerHTML = '';
 
   if (produtos.length === 0) {
     gridProdutos.innerHTML = `
@@ -47,16 +47,16 @@ function renderizarGridProdutos() {
     const estoque = produto.estoque ?? 0;
     const semEstoque = estoque <= 0;
 
-    const card = document.createElement("div");
-    card.className = "produto-card";
+    const card = document.createElement('div');
+    card.className = 'produto-card';
     card.innerHTML = `
             <div class="produto-info">
                 <h3>${produto.nome}</h3>
                 <p class="produto-descricao">${produto.descricao}</p>
-                <p class="produto-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</p>
-                <p class="produto-estoque">${semEstoque ? "Esgotado" : `${estoque} em estoque`}</p>
-                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})" ${semEstoque ? "disabled" : ""}>
-                  ${semEstoque ? "Esgotado" : "Adicionar ao Carrinho"}
+                <p class="produto-preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</p>
+                <p class="produto-estoque">${semEstoque ? 'Esgotado' : `${estoque} em estoque`}</p>
+                <button class="btn-adicionar" onclick="adicionarAoCarrinho(${produto.id})" ${semEstoque ? 'disabled' : ''}>
+                  ${semEstoque ? 'Esgotado' : 'Adicionar ao Carrinho'}
                 </button>
             </div>
         `;
@@ -121,26 +121,26 @@ function alterarQuantidade(produtoId, novaQuantidade) {
 
 // Atualizar exibição do carrinho
 function atualizarCarrinho() {
-  const carrinhoItems = document.getElementById("carrinho-items");
-  const contadorCarrinho = document.getElementById("contador-carrinho");
-  const totalPreco = document.getElementById("total-preco");
+  const carrinhoItems = document.getElementById('carrinho-items');
+  const contadorCarrinho = document.getElementById('contador-carrinho');
+  const totalPreco = document.getElementById('total-preco');
 
   contadorCarrinho.textContent = carrinho.reduce(
     (total, item) => total + item.quantidade,
-    0,
+    0
   );
 
   if (carrinho.length === 0) {
     carrinhoItems.innerHTML =
       '<p class="carrinho-vazio">Seu carrinho está vazio</p>';
-    totalPreco.textContent = "R$ 0,00";
+    totalPreco.textContent = 'R$ 0,00';
   } else {
     carrinhoItems.innerHTML = carrinho
       .map(
         (item) => `
             <div class="carrinho-item">
                 <div class="carrinho-item-nome">${item.nome}</div>
-                <div class="carrinho-item-preco">R$ ${item.preco.toFixed(2).replace(".", ",")}</div>
+                <div class="carrinho-item-preco">R$ ${item.preco.toFixed(2).replace('.', ',')}</div>
                 <div class="carrinho-item-quantidade">
                     <button class="qty-btn" onclick="alterarQuantidade(${item.id}, ${item.quantidade - 1})">−</button>
                     <span>${item.quantidade}</span>
@@ -148,31 +148,31 @@ function atualizarCarrinho() {
                 </div>
                 <button class="remover-btn" onclick="removerDoCarrinho(${item.id})">Remover</button>
             </div>
-        `,
+        `
       )
-      .join("");
+      .join('');
 
     const total = carrinho.reduce(
       (sum, item) => sum + item.preco * item.quantidade,
-      0,
+      0
     );
-    totalPreco.textContent = "R$ " + total.toFixed(2).replace(".", ",");
+    totalPreco.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
   }
 }
 
 // Toggle do carrinho sidebar
 function toggleCarrinho() {
-  const sidebar = document.getElementById("carrinho-sidebar");
-  const overlay = document.getElementById("overlay");
-  sidebar.classList.toggle("ativo");
-  overlay.classList.toggle("ativo");
+  const sidebar = document.getElementById('carrinho-sidebar');
+  const overlay = document.getElementById('overlay');
+  sidebar.classList.toggle('ativo');
+  overlay.classList.toggle('ativo');
 }
 
 // Checkout — o servidor confere e desconta o estoque de verdade;
 // o navegador só avisa o resultado.
 async function checkout() {
   if (carrinho.length === 0) {
-    alert("Seu carrinho está vazio!");
+    alert('Seu carrinho está vazio!');
     return;
   }
 
@@ -182,18 +182,18 @@ async function checkout() {
   }));
   const total = carrinho.reduce(
     (sum, item) => sum + item.preco * item.quantidade,
-    0,
+    0
   );
   const items = carrinho
     .map((item) => `${item.nome} (${item.quantidade}x)`)
-    .join(", ");
-  const token = sessionStorage.getItem("authToken");
+    .join(', ');
+  const token = sessionStorage.getItem('authToken');
 
   try {
-    const resposta = await fetch("/checkout", {
-      method: "POST",
+    const resposta = await fetch('/checkout', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ itens }),
@@ -203,14 +203,14 @@ async function checkout() {
 
     if (!resposta.ok) {
       alert(
-        `❌ ${dados.error}\n\nO carrinho foi atualizado com o estoque atual.`,
+        `❌ ${dados.error}\n\nO carrinho foi atualizado com o estoque atual.`
       );
       await carregarProdutos();
       return;
     }
 
     alert(
-      `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace(".", ",")}\n\nObrigado pela compra!`,
+      `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace('.', ',')}\n\nObrigado pela compra!`
     );
 
     carrinho = [];
@@ -218,7 +218,7 @@ async function checkout() {
     toggleCarrinho();
     await carregarProdutos();
   } catch (erro) {
-    alert("❌ Não foi possível conectar ao servidor para finalizar a compra.");
+    alert('❌ Não foi possível conectar ao servidor para finalizar a compra.');
   }
 }
 
@@ -229,7 +229,7 @@ function mostrarNotificacao(mensagem) {
 }
 
 // Inicializar ao carregar a página
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   carregarProdutos();
   inicializarFormularioProduto();
 });
@@ -238,21 +238,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Toggle modal admin
 function toggleAdmin() {
-  const modal = document.getElementById("modal-admin");
-  const overlay = document.getElementById("modal-overlay");
+  const modal = document.getElementById('modal-admin');
+  const overlay = document.getElementById('modal-overlay');
 
   if (
-    typeof usuarioTemPermissao === "function" &&
-    !usuarioTemPermissao("privilegiosAdministrativos")
+    typeof usuarioTemPermissao === 'function' &&
+    !usuarioTemPermissao('privilegiosAdministrativos')
   ) {
-    alert("Acesso restrito ao administrador.");
+    alert('Acesso restrito ao administrador.');
     return;
   }
 
-  modal.classList.toggle("ativo");
-  overlay.classList.toggle("ativo");
+  modal.classList.toggle('ativo');
+  overlay.classList.toggle('ativo');
 
-  if (modal.classList.contains("ativo")) {
+  if (modal.classList.contains('ativo')) {
     listarProdutosAdmin();
     listarUsuariosAdmin();
     carregarPedidosAdmin();
@@ -261,9 +261,9 @@ function toggleAdmin() {
 
 // Inicializar formulário de novo produto
 function inicializarFormularioProduto() {
-  const form = document.getElementById("form-novo-produto");
+  const form = document.getElementById('form-novo-produto');
   if (form) {
-    form.addEventListener("submit", function (e) {
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
       criarNovoProduto();
     });
@@ -272,10 +272,10 @@ function inicializarFormularioProduto() {
 
 // Criar novo produto (via API)
 async function criarNovoProduto() {
-  const nome = document.getElementById("prod-nome").value;
-  const preco = parseFloat(document.getElementById("prod-preco").value);
-  const descricao = document.getElementById("prod-descricao").value;
-  const estoqueInput = document.getElementById("prod-estoque");
+  const nome = document.getElementById('prod-nome').value;
+  const preco = parseFloat(document.getElementById('prod-preco').value);
+  const descricao = document.getElementById('prod-descricao').value;
+  const estoqueInput = document.getElementById('prod-estoque');
   const estoque = estoqueInput ? parseInt(estoqueInput.value, 10) : 0;
 
   if (
@@ -287,18 +287,18 @@ async function criarNovoProduto() {
     estoque < 0
   ) {
     alert(
-      "❌ Preencha todos os campos corretamente (preço e estoque não podem ser negativos)!",
+      '❌ Preencha todos os campos corretamente (preço e estoque não podem ser negativos)!'
     );
     return;
   }
 
-  const token = sessionStorage.getItem("authToken");
+  const token = sessionStorage.getItem('authToken');
 
   try {
-    const resposta = await fetch("/products", {
-      method: "POST",
+    const resposta = await fetch('/products', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ nome, descricao, preco, estoque }),
@@ -307,24 +307,24 @@ async function criarNovoProduto() {
     const dados = await resposta.json();
 
     if (!resposta.ok) {
-      alert("❌ " + dados.error);
+      alert('❌ ' + dados.error);
       return;
     }
 
-    document.getElementById("form-novo-produto").reset();
+    document.getElementById('form-novo-produto').reset();
     await carregarProdutos();
     await listarProdutosAdmin();
 
-    alert("✅ Produto adicionado com sucesso!");
+    alert('✅ Produto adicionado com sucesso!');
   } catch (erro) {
-    alert("❌ Não foi possível conectar ao servidor.");
+    alert('❌ Não foi possível conectar ao servidor.');
   }
 }
 
 // Listar produtos na interface admin (busca sempre atualizado da API)
 async function listarProdutosAdmin() {
-  const container = document.getElementById("produtos-admin");
-  if (!usuarioTemPermissao("privilegiosAdministrativos")) {
+  const container = document.getElementById('produtos-admin');
+  if (!usuarioTemPermissao('privilegiosAdministrativos')) {
     container.innerHTML =
       '<p class="produtos-vazio">Você não tem permissão para gerenciar produtos.</p>';
     return;
@@ -348,35 +348,35 @@ async function listarProdutosAdmin() {
                     <p>${produto.descricao}</p>
                 </div>
             </div>
-            <div class="produto-admin-preco">R$ ${produto.preco.toFixed(2).replace(".", ",")}</div>
+            <div class="produto-admin-preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
             <div class="produto-admin-estoque">Estoque: ${produto.estoque ?? 0}</div>
             <div class="produto-admin-actions">
                 <button class="btn-editar" onclick="editarProduto(${produto.id})">✏️ Editar</button>
                 <button class="btn-deletar" onclick="deletarProduto(${produto.id})">🗑️ Deletar</button>
             </div>
         </div>
-    `,
+    `
     )
-    .join("");
+    .join('');
 }
 
 // ---------- Gestão de usuários e permissões (via API) ----------
 
 // Listar contas e suas permissões
 async function listarUsuariosAdmin() {
-  const container = document.getElementById("usuarios-admin");
+  const container = document.getElementById('usuarios-admin');
   if (!container) return;
 
-  if (!usuarioTemPermissao("privilegiosAdministrativos")) {
+  if (!usuarioTemPermissao('privilegiosAdministrativos')) {
     container.innerHTML =
       '<p class="produtos-vazio">Você não tem permissão para gerenciar contas.</p>';
     return;
   }
 
-  const token = sessionStorage.getItem("authToken");
+  const token = sessionStorage.getItem('authToken');
 
   try {
-    const resposta = await fetch("/users", {
+    const resposta = await fetch('/users', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -391,12 +391,12 @@ async function listarUsuariosAdmin() {
     container.innerHTML = usuarios
       .map((usuario) => {
         const permissoes = usuario.permissoes || {};
-        const contaPrincipal = usuario.username === "admin@araca.com";
+        const contaPrincipal = usuario.username === 'admin@araca.com';
         const controles = contaPrincipal
           ? '<p class="permissoes-bloqueadas">Administrador principal: permissões protegidas</p>'
           : `
             <label class="permissao-item">
-              <input type="checkbox" ${permissoes.privilegiosAdministrativos ? "checked" : ""}
+              <input type="checkbox" ${permissoes.privilegiosAdministrativos ? 'checked' : ''}
                 onchange="alterarPermissaoUsuario('${usuario.username}', this.checked)">
               Privilégios Administrativos
             </label>
@@ -412,7 +412,7 @@ async function listarUsuariosAdmin() {
           </div>
         `;
       })
-      .join("");
+      .join('');
   } catch (erro) {
     container.innerHTML =
       '<p class="produtos-vazio">Erro ao conectar ao servidor.</p>';
@@ -422,33 +422,33 @@ async function listarUsuariosAdmin() {
 // Alterar o privilégio administrativo de um usuário
 async function alterarPermissaoUsuario(username, habilitada) {
   if (
-    !usuarioTemPermissao("privilegiosAdministrativos") ||
-    username === "admin@araca.com"
+    !usuarioTemPermissao('privilegiosAdministrativos') ||
+    username === 'admin@araca.com'
   ) {
     return;
   }
 
-  const token = sessionStorage.getItem("authToken");
+  const token = sessionStorage.getItem('authToken');
 
   try {
     const resposta = await fetch(
       `/users/${encodeURIComponent(username)}/permissoes`,
       {
-        method: "PATCH",
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ habilitada }),
-      },
+      }
     );
 
     if (!resposta.ok) {
-      alert("❌ Não foi possível atualizar a permissão.");
+      alert('❌ Não foi possível atualizar a permissão.');
       listarUsuariosAdmin();
     }
   } catch (erro) {
-    alert("❌ Erro ao conectar ao servidor.");
+    alert('❌ Erro ao conectar ao servidor.');
     listarUsuariosAdmin();
   }
 }
@@ -458,21 +458,21 @@ async function alterarPermissaoUsuario(username, habilitada) {
 // Carrega e mostra quem reservou o quê. Só aparece pra quem é admin de
 // verdade (não basta ter a permissão de gerenciar produtos ou contas).
 async function carregarPedidosAdmin() {
-  const secao = document.getElementById("secao-pedidos-admin");
-  const container = document.getElementById("pedidos-admin");
+  const secao = document.getElementById('secao-pedidos-admin');
+  const container = document.getElementById('pedidos-admin');
   if (!secao || !container) return;
 
-  if (typeof usuarioAtualEhAdmin !== "function" || !usuarioAtualEhAdmin()) {
+  if (typeof usuarioAtualEhAdmin !== 'function' || !usuarioAtualEhAdmin()) {
     secao.hidden = true;
     return;
   }
 
   secao.hidden = false;
 
-  const token = sessionStorage.getItem("authToken");
+  const token = sessionStorage.getItem('authToken');
 
   try {
-    const resposta = await fetch("/orders", {
+    const resposta = await fetch('/orders', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -495,9 +495,9 @@ async function carregarPedidosAdmin() {
         const itensHtml = pedido.itens
           .map(
             (item) =>
-              `<li>${item.quantidade}x ${item.nome} — R$ ${item.preco.toFixed(2).replace(".", ",")} cada</li>`,
+              `<li>${item.quantidade}x ${item.nome} — R$ ${item.preco.toFixed(2).replace('.', ',')} cada</li>`
           )
-          .join("");
+          .join('');
 
         return `
           <div class="pedido-admin-card">
@@ -506,11 +506,11 @@ async function carregarPedidosAdmin() {
               <span>${pedido.data}</span>
             </div>
             <ul class="pedido-admin-itens">${itensHtml}</ul>
-            <div class="pedido-admin-total">Total: R$ ${pedido.total.toFixed(2).replace(".", ",")}</div>
+            <div class="pedido-admin-total">Total: R$ ${pedido.total.toFixed(2).replace('.', ',')}</div>
           </div>
         `;
       })
-      .join("");
+      .join('');
   } catch (erro) {
     container.innerHTML =
       '<p class="produtos-vazio">Erro ao conectar ao servidor.</p>';
@@ -519,28 +519,28 @@ async function carregarPedidosAdmin() {
 
 // Deletar produto (via API)
 async function deletarProduto(produtoId) {
-  if (!confirm("Tem certeza que deseja deletar este produto?")) return;
+  if (!confirm('Tem certeza que deseja deletar este produto?')) return;
 
-  const token = sessionStorage.getItem("authToken");
+  const token = sessionStorage.getItem('authToken');
 
   try {
     const resposta = await fetch(`/products/${produtoId}`, {
-      method: "DELETE",
+      method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
 
     const dados = await resposta.json();
 
     if (!resposta.ok) {
-      alert("❌ " + (dados.error || "Erro ao deletar produto."));
+      alert('❌ ' + (dados.error || 'Erro ao deletar produto.'));
       return;
     }
 
     await carregarProdutos();
     await listarProdutosAdmin();
-    alert("✅ Produto deletado com sucesso!");
+    alert('✅ Produto deletado com sucesso!');
   } catch (erro) {
-    alert("❌ Não foi possível conectar ao servidor.");
+    alert('❌ Não foi possível conectar ao servidor.');
   }
 }
 
@@ -549,25 +549,25 @@ async function editarProduto(produtoId) {
   const produto = produtos.find((p) => p.id === produtoId);
   if (!produto) return;
 
-  const novoNome = prompt("Novo nome:", produto.nome);
+  const novoNome = prompt('Novo nome:', produto.nome);
   if (novoNome === null) return;
 
-  const novaDescricao = prompt("Nova descrição:", produto.descricao);
+  const novaDescricao = prompt('Nova descrição:', produto.descricao);
   if (novaDescricao === null) return;
 
-  const novoPreco = prompt("Novo preço:", produto.preco);
+  const novoPreco = prompt('Novo preço:', produto.preco);
   if (novoPreco === null) return;
 
-  const novoEstoque = prompt("Novo estoque:", produto.estoque ?? 0);
+  const novoEstoque = prompt('Novo estoque:', produto.estoque ?? 0);
   if (novoEstoque === null) return;
 
-  const token = sessionStorage.getItem("authToken");
+  const token = sessionStorage.getItem('authToken');
 
   try {
     const resposta = await fetch(`/products/${produtoId}`, {
-      method: "PUT",
+      method: 'PUT',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
@@ -581,14 +581,14 @@ async function editarProduto(produtoId) {
     const dados = await resposta.json();
 
     if (!resposta.ok) {
-      alert("❌ " + (dados.error || "Erro ao editar produto."));
+      alert('❌ ' + (dados.error || 'Erro ao editar produto.'));
       return;
     }
 
     await carregarProdutos();
     await listarProdutosAdmin();
-    alert("✅ Produto editado com sucesso!");
+    alert('✅ Produto editado com sucesso!');
   } catch (erro) {
-    alert("❌ Não foi possível conectar ao servidor.");
+    alert('❌ Não foi possível conectar ao servidor.');
   }
 }

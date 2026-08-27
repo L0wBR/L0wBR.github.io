@@ -14,7 +14,7 @@
 }
 
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--cor-fundo);
   color: var(--cor-texto);
   line-height: 1.6;
@@ -408,7 +408,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .login-container {
@@ -490,9 +490,9 @@ body {
   font-weight: 500;
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="password"] {
+.form-group input[type='text'],
+.form-group input[type='email'],
+.form-group input[type='password'] {
   width: 100%;
   padding: 0.8rem;
   border: 2px solid var(--cor-secundaria);
@@ -502,9 +502,9 @@ body {
   font-family: inherit;
 }
 
-.form-group input[type="text"]:focus,
-.form-group input[type="email"]:focus,
-.form-group input[type="password"]:focus {
+.form-group input[type='text']:focus,
+.form-group input[type='email']:focus,
+.form-group input[type='password']:focus {
   outline: none;
   border-color: var(--cor-primaria);
   box-shadow: 0 0 8px rgba(139, 90, 60, 0.2);
@@ -516,7 +516,7 @@ body {
   gap: 0.5rem;
 }
 
-.form-group.checkbox input[type="checkbox"] {
+.form-group.checkbox input[type='checkbox'] {
   width: 20px;
   height: 20px;
   cursor: pointer;
