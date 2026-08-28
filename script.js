@@ -46,10 +46,14 @@ function renderizarGridProdutos() {
   produtos.forEach((produto) => {
     const estoque = produto.estoque ?? 0;
     const semEstoque = estoque <= 0;
+    const imagemHtml = produto.imagem
+      ? `<img class="produto-imagem-real" src="/uploads/produtos/${produto.imagem}" alt="${produto.nome}">`
+      : `<div class="produto-imagem-placeholder">Sem imagem</div>`;
 
     const card = document.createElement('div');
     card.className = 'produto-card';
     card.innerHTML = `
+            ${imagemHtml}
             <div class="produto-info">
                 <h3>${produto.nome}</h3>
                 <p class="produto-descricao">${produto.descricao}</p>
@@ -342,6 +346,11 @@ async function listarProdutosAdmin() {
     .map(
       (produto) => `
         <div class="produto-admin-card">
+            ${
+              produto.imagem
+                ? `<img class="produto-admin-imagem" src="/uploads/produtos/${produto.imagem}" alt="${produto.nome}">`
+                : `<div class="produto-admin-imagem-placeholder">Sem imagem</div>`
+            }
             <div class="produto-admin-header">
                 <div class="produto-admin-info">
                     <h4>${produto.nome}</h4>
@@ -350,6 +359,10 @@ async function listarProdutosAdmin() {
             </div>
             <div class="produto-admin-preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
             <div class="produto-admin-estoque">Estoque: ${produto.estoque ?? 0}</div>
+            <label class="btn-upload-imagem">
+                📷 ${produto.imagem ? 'Trocar imagem' : 'Enviar imagem'}
+                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="enviarImagemProduto(${produto.id}, this)" hidden>
+            </label>
             <div class="produto-admin-actions">
                 <button class="btn-editar" onclick="editarProduto(${produto.id})">✏️ Editar</button>
                 <button class="btn-deletar" onclick="deletarProduto(${produto.id})">🗑️ Deletar</button>
@@ -514,6 +527,48 @@ async function carregarPedidosAdmin() {
   } catch (erro) {
     container.innerHTML =
       '<p class="produtos-vazio">Erro ao conectar ao servidor.</p>';
+  }
+}
+
+// Enviar (ou trocar) a imagem de um produto
+async function enviarImagemProduto(produtoId, inputElement) {
+  const arquivo = inputElement.files[0];
+  if (!arquivo) return;
+
+  if (arquivo.size > 5 * 1024 * 1024) {
+    alert('❌ A imagem precisa ter no máximo 5 MB.');
+    inputElement.value = '';
+    return;
+  }
+
+  const token = sessionStorage.getItem('authToken');
+  const formData = new FormData();
+  formData.append('imagem', arquivo);
+
+  try {
+    const resposta = await fetch(`/products/${produtoId}/imagem`, {
+      method: 'POST',
+      headers: {
+        // Sem "Content-Type" aqui de propósito: o navegador define o
+        // boundary do multipart/form-data sozinho.
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      alert('❌ ' + (dados.error || 'Erro ao enviar imagem.'));
+      return;
+    }
+
+    await carregarProdutos();
+    await listarProdutosAdmin();
+  } catch (erro) {
+    alert('❌ Não foi possível conectar ao servidor.');
+  } finally {
+    inputElement.value = '';
   }
 }
 
