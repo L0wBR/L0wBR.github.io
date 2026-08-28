@@ -410,12 +410,6 @@ body {
   margin: 0.5rem 0;
 }
 
-.footer .nav {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
 /* Login Styles */
 .body-login {
   background: linear-gradient(135deg, var(--cor-destaque), var(--cor-primaria));
