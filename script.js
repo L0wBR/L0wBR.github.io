@@ -214,7 +214,7 @@ async function checkout() {
     }
 
     alert(
-      `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace('.', ',')}\n\nObrigado pela compra!`
+      `Pedido confirmado!\n\nProdutos: ${items}\n\nTotal: R$ ${total.toFixed(2).replace('.', ',')}\n\nObrigado pela reserva!`
     );
 
     carrinho = [];
